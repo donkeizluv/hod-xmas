@@ -4,6 +4,8 @@ import Footer from "@components/Footer";
 import NavBar from "@components/NavBar";
 import ChakraProvider from "../Providers/ChakraProvider";
 import WalletProvider from "../Providers/WalletProvider";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 export default function RootLayout({
   children,
@@ -11,7 +13,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ChakraProvider>
+    <DndProvider backend={HTML5Backend}>
+      <ChakraProvider>
       <WalletProvider>
         <NavBar
           mx={{
@@ -40,5 +43,6 @@ export default function RootLayout({
         <Footer minH="18rem" py="3rem" px="5vw"></Footer>
       </WalletProvider>
     </ChakraProvider>
+    </DndProvider>
   );
 }

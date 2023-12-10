@@ -1,17 +1,18 @@
 "use client";
 
-import React, { useState, useEffect, createRef, RefObject } from "react";
+import React, { useState, useEffect, createRef, RefObject, useRef } from "react";
 import Konva from "konva";
-import { DndProvider } from "react-dnd";
+import { DndProvider, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Stage, Layer, Star, Image, Transformer } from "react-konva";
 import useImage from "use-image";
 import FramerItem from "./FramerItem";
-
-import "./framer-page.styles.css";
+import { HStack, Center, Box, VStack } from "@chakra-ui/react";
 import { ItemTypes } from "../types/FramerItemType";
-
-
+import "./framer-page.styles.css";
+import NextImage from "next/image";
+import FramerAccessory from "./FramerAccessory";
+import { NodeConfig } from "konva/lib/Node";
 
 function generateShapes() {
   return [...Array(2)].map((_, i) => ({
@@ -25,67 +26,134 @@ function generateShapes() {
   }));
 }
 
+function generateAccessories() {
+  return [...Array(13)].map((_, i) => ({
+    key: `image` + i.toString(),
+    url: `/assets/accessories/g_${i + 1}.png`,
+  }));
+}
+
 const INITIAL_STATE = generateShapes();
 
 const AvatarImage = (props: any) => {
   const [image] = useImage("https://konvajs.org/assets/lion.png");
-  return <Image width={400} height={400} image={image} {...props} />;
+  return <Image image={image} {...props} />;
 };
 
 const App = () => {
-  const [items, setItems] = useState(INITIAL_STATE);
+  const [items, setItems] = useState<ItemTypes[]>([]);
   const stageRef: RefObject<Konva.Stage> = createRef();
-  const [selectedId, selectItem] = useState<String | null>(null);
+  const [selectedId, selectItem] = useState<String | undefined>(undefined);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const checkDeselect = (event: Konva.KonvaEventObject<MouseEvent> | Konva.KonvaEventObject<TouchEvent>) => {
+  const [dropResult, drop] = useDrop(() => ({
+    accept: "box",
+    drop: () => ({ name: "Dustbin" }),
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+      canDrop: monitor.canDrop(),
+    }),
+  }));
+
+  const checkDeselect = (
+    event:
+      | Konva.KonvaEventObject<MouseEvent>
+      | Konva.KonvaEventObject<TouchEvent>
+  ) => {
     // deselect when clicked on empty area
     const clickedOnEmpty = event.target === event.target.getStage();
     if (clickedOnEmpty) {
-      selectItem(null);
+      selectItem(undefined);
     }
   };
 
-  const onItemSelect = (id: string) => {  
+  const onItemSelect = (id: string) => {
     selectItem(id);
-  }
+  };
 
-  const handleItemChange = (id: string, newProps: ItemTypes) => {
-    const newItems = [...items].map((item) => { 
-      if(item.id === id) {
-        return {
-          ...item,
-          ...newProps,
+  const handleItemChange = (id: string | undefined, newProps: ItemTypes) => {
+    if (items && items.length > 0) {
+      const newItems = [...items].map((item) => {
+        if (item.id === id) {
+          return {
+            ...item,
+            ...newProps,
           };
-      }
-      return item;
+        }
+        return item;
+      });
+      console.log(newItems);
+      setItems(newItems);
+    }
+  };
+
+  const handleAddItemByUrl = (url: string) => {
+    setItems(pre => {
+      const newItems = [...pre];
+      newItems.push({
+        id: newItems.length.toString(),
+        x: containerRef.current?.scrollTop,
+        y: containerRef.current?.scrollLeft,
+        isDragging: false,
+        scaleX: 1,
+        url: url,
+      });
+      return newItems;
     });
-    setItems(newItems);
   }
 
   return (
-    <DndProvider backend={HTML5Backend}>
-      <Stage
-        ref={stageRef}
-        width={window.innerWidth}
-        height={window.innerHeight}
-        onMouseDown={checkDeselect}
-        onTouchStart={checkDeselect}
-      >
-        <Layer>
-          <AvatarImage x={window.innerWidth / 3} y={window.innerHeight / 3} />
-          {items.map((item, index) => (
-          <FramerItem key={item.id}
-            shapeProps={item}
-            isSelected={item.id === selectedId}
-            onSelect={() => {
-              selectItem(item.id);
-            }}
-            onChange={(newProps) => handleItemChange(item.id, newProps)} 
-            itemUrl={item.url} />
-          ))}
-        </Layer>
-      </Stage>
-    </DndProvider>
+    <HStack w="100%">
+      {/* Editor screen */}
+      <Box ref={containerRef}>
+        <Box
+          ref={drop}
+          bgSize="cover"
+          bgImage={"https://konvajs.org/assets/lion.png"}
+        >
+          <Stage
+            ref={stageRef}
+            width={window.innerWidth / 3}
+            height={window.innerHeight / 2}
+            onMouseDown={checkDeselect}
+            onTouchStart={checkDeselect}
+          >
+            <Layer>
+              {/* AvatarImage center of stageRef position */}
+              <AvatarImage
+                width={stageRef.current ? stageRef.current.width() : 0}
+                height={stageRef.current ? stageRef.current.height() : 0}
+              />
+              {items &&
+                items.length > 0 &&
+                items.map((item, index) => (
+                  <FramerItem
+                    key={item.id}
+                    shapeProps={item}
+                    isSelected={item.id === selectedId}
+                    onSelect={() => {
+                      selectItem(item.id);
+                    }}
+                    onChange={(newProps) => handleItemChange(item.id, newProps)}
+                    itemUrl={item.url}
+                  />
+                ))}
+            </Layer>
+          </Stage>
+        </Box>
+      </Box>
+      
+      {/* Editor tools */}
+      <VStack wrap="wrap" w="auto" h="50vh" bg={"black"} opacity={"0.9"}>
+        {generateAccessories().map((item, index) => (
+          <FramerAccessory
+            key={item.key}
+            item={item}
+            endDropCallBack={(item) => handleAddItemByUrl(item.url)}
+          />
+        ))}
+      </VStack>
+    </HStack>
   );
 };
 
