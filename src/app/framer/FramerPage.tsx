@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, createRef, RefObject, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  createRef,
+  RefObject,
+  useRef,
+} from "react";
 import Konva from "konva";
 import { DndProvider, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -36,7 +42,7 @@ function generateAccessories() {
 const INITIAL_STATE = generateShapes();
 
 const AvatarImage = (props: any) => {
-  const [image] = useImage("https://konvajs.org/assets/lion.png");
+  const [image] = useImage("/assets/avatar.jpg");
   return <Image image={image} {...props} />;
 };
 
@@ -62,6 +68,7 @@ const App = () => {
   ) => {
     // deselect when clicked on empty area
     const clickedOnEmpty = event.target === event.target.getStage();
+    console.log("clickedOnEmpty", clickedOnEmpty);
     if (clickedOnEmpty) {
       selectItem(undefined);
     }
@@ -88,7 +95,7 @@ const App = () => {
   };
 
   const handleAddItemByUrl = (url: string) => {
-    setItems(pre => {
+    setItems((pre) => {
       const newItems = [...pre];
       newItems.push({
         id: newItems.length.toString(),
@@ -100,29 +107,37 @@ const App = () => {
       });
       return newItems;
     });
-  }
+  };
 
+  const avatarPosition = {
+    x: 0,
+    y: 0,
+  };
+  console.log(
+    containerRef.current?.offsetWidth,
+    containerRef.current?.offsetHeight
+  );
   return (
     <HStack w="100%">
       {/* Editor screen */}
-      <Box ref={containerRef}>
-        <Box
-          ref={drop}
-          bgSize="cover"
-          bgImage={"https://konvajs.org/assets/lion.png"}
-        >
+      <Box w="50%" h="50vh" ref={containerRef}>
+        <Box ref={drop}>
           <Stage
             ref={stageRef}
-            width={window.innerWidth / 3}
-            height={window.innerHeight / 2}
+            width={containerRef.current?.offsetWidth || window.innerWidth}
+            height={containerRef.current?.offsetHeight || window.innerHeight}
             onMouseDown={checkDeselect}
             onTouchStart={checkDeselect}
           >
             <Layer>
               {/* AvatarImage center of stageRef position */}
               <AvatarImage
-                width={stageRef.current ? stageRef.current.width() : 0}
-                height={stageRef.current ? stageRef.current.height() : 0}
+                x={avatarPosition.x}
+                y={avatarPosition.y}
+                width={containerRef.current?.offsetWidth}
+                height={containerRef.current?.offsetHeight}
+                onMouseDown={checkDeselect}
+                onTouchStart={checkDeselect}
               />
               {items &&
                 items.length > 0 &&
@@ -142,9 +157,9 @@ const App = () => {
           </Stage>
         </Box>
       </Box>
-      
+
       {/* Editor tools */}
-      <VStack wrap="wrap" w="auto" h="50vh" bg={"black"} opacity={"0.9"}>
+      <VStack wrap="wrap" w="50%" h="50vh" bg={"black"} opacity={"0.9"}>
         {generateAccessories().map((item, index) => (
           <FramerAccessory
             key={item.key}
