@@ -1,12 +1,17 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, createRef, RefObject } from "react";
+import Konva from "konva";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Stage, Layer, Star, Image, Transformer } from "react-konva";
 import useImage from "use-image";
+import FramerItem from "./FramerItem";
 
 import "./framer-page.styles.css";
+import { ItemTypes } from "../types/FramerItemType";
+
+
 
 function generateShapes() {
   return [...Array(2)].map((_, i) => ({
@@ -16,131 +21,46 @@ function generateShapes() {
     rotation: Math.random() * 180,
     isDragging: false,
     scaleX: 1,
-    data: "hat",
+    url: "https://konvajs.org/assets/lion.png",
   }));
 }
 
 const INITIAL_STATE = generateShapes();
 
-const AvatarImage = (props) => {
+const AvatarImage = (props: any) => {
   const [image] = useImage("https://konvajs.org/assets/lion.png");
   return <Image width={400} height={400} image={image} {...props} />;
 };
 
-const HatImage = (props) => {
-  const [image] = useImage("christmas_hat.png");
-  return <Image width={100} height={100} image={image} {...props} />;
-};
-
 const App = () => {
-  const [stars, setStars] = useState(INITIAL_STATE);
-  const [accessories, setAccessories] = useState([]);
-  const [selectedImage, setSelectedImage] = useState({
-    node: null,
-    data: null,
-  });
-  const stageRef = useRef(null);
+  const [items, setItems] = useState(INITIAL_STATE);
+  const stageRef: RefObject<Konva.Stage> = createRef();
+  const [selectedId, selectItem] = useState<String | null>(null);
 
-  const handleImageClick = (event, item) => {
-    setSelectedImage({
-      node: event.target,
-      data: item,
-    });
-  };
-
-  const handleClickOutside = (e) => {
-    // Check if the clicked element is outside the Transformer and stage
-    console.log(
-      "asdasdasdasdasd",
-      stageRef.current && stageRef.current.container().contains(e.target)
-    );
-    if (stageRef.current && !stageRef.current.container().contains(e.target)) {
-      setSelectedImage({
-        node: null,
-        data: null,
-      }); // Deselect the image
+  const checkDeselect = (event: Konva.KonvaEventObject<MouseEvent> | Konva.KonvaEventObject<TouchEvent>) => {
+    // deselect when clicked on empty area
+    const clickedOnEmpty = event.target === event.target.getStage();
+    if (clickedOnEmpty) {
+      selectItem(null);
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.code === "Delete" || e.key === "Delete") {
-      if (selectedImage?.data?.id) {
-        setStars(stars.filter((image) => image.id !== selectedImage.data.id));
+  const onItemSelect = (id: string) => {  
+    selectItem(id);
+  }
+
+  const handleItemChange = (id: string, newProps: ItemTypes) => {
+    const newItems = [...items].map((item) => { 
+      if(item.id === id) {
+        return {
+          ...item,
+          ...newProps,
+          };
       }
-    }
-  };
-
-  useEffect(() => {
-    window.addEventListener("click", handleClickOutside);
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("click", handleClickOutside);
-      window.addEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
-  const handleRotate = () => {
-    if (selectedImage) {
-      const updatedImages = stars.map((image) => {
-        if (image.id === selectedImage.data.id) {
-          return { ...image, scaleX: -image.scaleX };
-        }
-        return image;
-      });
-      setStars(updatedImages);
-    }
-  };
-
-  const handleDragStart = (e) => {
-    const id = e.target.id();
-    setStars(
-      stars.map((star) => {
-        return {
-          ...star,
-          isDragging: star.id === id,
-        };
-      })
-    );
-  };
-
-  const addAccessory = (accessoryType, x, y) => {
-    setAccessories([...accessories, { type: accessoryType, x, y }]);
-  };
-
-  const handleDrop = (item, monitor) => {
-    const delta = monitor.getDifferenceFromInitialOffset();
-    const left = Math.round(item.left + delta.x);
-    const top = Math.round(item.top + delta.y);
-    addAccessory(item.type, left, top);
-  };
-
-  const DraggableAccessory = ({ type }) => {
-    const handleDragStart = (e) => {
-      e.dataTransfer.setData("type", type);
-    };
-
-    return (
-      <img
-        draggable
-        onDragStart={handleDragStart}
-        src={`./christmas_${type}.png`}
-        alt={type}
-        style={{ width: "50px", height: "50px", cursor: "move" }}
-      />
-    );
-  };
-
-  const handleDragEnd = (e) => {
-    setStars(
-      stars.map((star) => {
-        return {
-          ...star,
-          isDragging: false,
-        };
-      })
-    );
-  };
+      return item;
+    });
+    setItems(newItems);
+  }
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -148,56 +68,23 @@ const App = () => {
         ref={stageRef}
         width={window.innerWidth}
         height={window.innerHeight}
+        onMouseDown={checkDeselect}
+        onTouchStart={checkDeselect}
       >
         <Layer>
           <AvatarImage x={window.innerWidth / 3} y={window.innerHeight / 3} />
-          {console.log(stars)}
-          {stars.map((star) => (
-            <HatImage
-              onClick={(event) => handleImageClick(event, star)}
-              key={star.id}
-              id={star.id}
-              draggable
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-            />
+          {items.map((item, index) => (
+          <FramerItem key={item.id}
+            shapeProps={item}
+            isSelected={item.id === selectedId}
+            onSelect={() => {
+              selectItem(item.id);
+            }}
+            onChange={(newProps) => handleItemChange(item.id, newProps)} 
+            itemUrl={item.url} />
           ))}
-          {selectedImage.node != null && (
-            <Transformer
-              ref={(node) => {
-                // eslint-disable-next-line no-unused-expressions
-                node && node.getLayer().batchDraw();
-              }}
-              enabledAnchors={[
-                "top-left",
-                "top-right",
-                "bottom-left",
-                "bottom-right",
-              ]}
-              boundBoxFunc={(oldBox, newBox) => {
-                if (newBox.width < 50 || newBox.height < 50) {
-                  return oldBox;
-                }
-                return newBox;
-              }}
-              rotateAnchorOffset={20}
-              rotateEnabled={true}
-              keepRatio={true}
-              flipEnabled={true}
-              useSingleNodeRotation={false}
-              node={selectedImage.node}
-            />
-          )}
         </Layer>
       </Stage>
-      <button className="rotate" onClick={handleRotate}>
-        Rotate
-      </button>
-      <div>
-        <DraggableAccessory type="hat" />
-        <DraggableAccessory type="hat" />
-        {/* Add more accessories as needed */}
-      </div>
     </DndProvider>
   );
 };
