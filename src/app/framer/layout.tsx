@@ -7,7 +7,7 @@ export default function Layout({ children }: PropsWithChildren) {
       minW="100%"
       justifyContent="top"
       alignItems="center"
-      flexDirection="column"
+      flexDirection="row"
       bgImage="linear-gradient(180deg, rgba(0, 0, 0, 0.80) 45%, rgba(0, 0, 0, 0.24) 100%), url('/assets/images/pixel_forest_bg.jpg')"
       bgBlendMode="darken"
       bgSize="cover"

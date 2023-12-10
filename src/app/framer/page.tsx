@@ -1,7 +1,10 @@
-import "server-only";
+'use client';
+import dynamic from 'next/dynamic';
 
-import FramerPage from "./FramerPage";
+const Canvas = dynamic(() => import('./FramerPage'), {
+  ssr: false,
+});
 
 export default function Page() {
-  return <FramerPage />;
+  return <Canvas />;
 }
