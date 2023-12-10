@@ -1,8 +1,12 @@
+"use client";
+
 import React, { useState, useEffect, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Stage, Layer, Star, Image, Transformer } from "react-konva";
 import useImage from "use-image";
+
+import "./framer-page.styles.css";
 
 function generateShapes() {
   return [...Array(2)].map((_, i) => ({
@@ -20,7 +24,7 @@ const INITIAL_STATE = generateShapes();
 
 const AvatarImage = (props) => {
   const [image] = useImage("https://konvajs.org/assets/lion.png");
-  return <Image width={400} height={400} image={image} {...props}/>;
+  return <Image width={400} height={400} image={image} {...props} />;
 };
 
 const HatImage = (props) => {
@@ -46,7 +50,10 @@ const App = () => {
 
   const handleClickOutside = (e) => {
     // Check if the clicked element is outside the Transformer and stage
-    console.log("asdasdasdasdasd", stageRef.current && stageRef.current.container().contains(e.target))
+    console.log(
+      "asdasdasdasdasd",
+      stageRef.current && stageRef.current.container().contains(e.target)
+    );
     if (stageRef.current && !stageRef.current.container().contains(e.target)) {
       setSelectedImage({
         node: null,
@@ -56,22 +63,20 @@ const App = () => {
   };
 
   const handleKeyDown = (e) => {
-    if (e.code === 'Delete' || e.key === 'Delete') {
-      if(selectedImage?.data?.id) {
+    if (e.code === "Delete" || e.key === "Delete") {
+      if (selectedImage?.data?.id) {
         setStars(stars.filter((image) => image.id !== selectedImage.data.id));
       }
     }
   };
 
-
   useEffect(() => {
-
-    window.addEventListener('click', handleClickOutside);
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("click", handleClickOutside);
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener('click', handleClickOutside);
-      window.addEventListener('keydown', handleKeyDown);
+      window.removeEventListener("click", handleClickOutside);
+      window.addEventListener("keydown", handleKeyDown);
     };
   }, []);
 
@@ -102,7 +107,6 @@ const App = () => {
   const addAccessory = (accessoryType, x, y) => {
     setAccessories([...accessories, { type: accessoryType, x, y }]);
   };
-  
 
   const handleDrop = (item, monitor) => {
     const delta = monitor.getDifferenceFromInitialOffset();
@@ -140,7 +144,11 @@ const App = () => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <Stage ref={stageRef} width={window.innerWidth} height={window.innerHeight}>
+      <Stage
+        ref={stageRef}
+        width={window.innerWidth}
+        height={window.innerHeight}
+      >
         <Layer>
           <AvatarImage x={window.innerWidth / 3} y={window.innerHeight / 3} />
           {console.log(stars)}
@@ -182,7 +190,9 @@ const App = () => {
           )}
         </Layer>
       </Stage>
-      <button className="rotate" onClick={handleRotate}>Rotate</button>
+      <button className="rotate" onClick={handleRotate}>
+        Rotate
+      </button>
       <div>
         <DraggableAccessory type="hat" />
         <DraggableAccessory type="hat" />

@@ -1,0 +1,10 @@
+.active {
+  color: var(--chakra-colors-primary-500);
+}
+.link:hover {
+  color: var(--chakra-colors-primary-300);
+}
+.link {
+  transition-property: var(--chakra-transition-property-common);
+  transition-duration: var(--chakra-transition-duration-normal);
+}
